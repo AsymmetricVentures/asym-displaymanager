@@ -28,9 +28,6 @@ from jinja2.utils import contextfunction
 from asymmetricbase.jinja import get_jinja_env
 from asymmetricbase.jinja.global_functions import jinja_getattr
 
-
-	
-	
 @contextfunction
 def jinja_context_getattr(context, attr_string):
 	"""
@@ -69,10 +66,25 @@ def jinja_resolve_contextattributes(context, __obj, **kwargs):
 	
 	return __obj
 
+@contextfunction
+def jinja_vtable(ctx, table, header = '', tail = '', title = ''):
+	return ctx.environment.get_template_module('asymmetricbase/displaymanager/base.djhtml', ctx).vtable(table, header, tail, title)
+
+@contextfunction
+def jinja_gridlayout(ctx, layout):
+	return ctx.environment.get_template_module('asymmetricbase/displaymanager/base.djhtml', ctx).gridlayout(layout)
+
+@contextfunction
+def jinja_display(ctx, layout):
+	return ctx.environment.get_template_module('asymmetricbase/displaymanager/base.djhtml', ctx).display(layout)
+
 class DisplayManagerAppConfig(AppConfig):
 	def ready(self):
 		get_jinja_env().globals.update({
 			'context_getattr' : jinja_context_getattr,
 			'batch_context_getattr' : jinja_batch_context_getattr,
 			'resolve_contextattributes' : jinja_resolve_contextattributes,
+			'vtable' : jinja_vtable,
+			'gridlayout' : jinja_gridlayout,
+			'display' : jinja_display,
 		})
