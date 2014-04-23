@@ -16,11 +16,63 @@
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from collections import OrderedDict
+
 try:
 	from django.apps import AppConfig
 except ImportError:
 	AppConfig = object
 
+from jinja2.utils import contextfunction
+
+from asymmetricbase.jinja import get_jinja_env
+from asymmetricbase.jinja.global_functions import jinja_getattr
+
+
+	
+	
+@contextfunction
+def jinja_context_getattr(context, attr_string):
+	"""
+	Tries to get attribute by name from context
+	"""
+	return jinja_getattr(context.environment, context, attr_string)
+
+@contextfunction
+def jinja_batch_context_getattr(context, *args, **kwargs):
+	new_args = []
+	new_kwargs = {}
+	if args:
+		for arg in args:
+			new_args.append(jinja_context_getattr(context, arg))
+		return new_args
+	if kwargs:
+		for k, v in kwargs.items():
+			new_kwargs[k] = jinja_context_getattr(context, v)
+		return new_kwargs
+
+@contextfunction
+def jinja_resolve_contextattributes(context, __obj, **kwargs):
+	from .utils import ContextAttribute
+	
+	if isinstance(__obj, ContextAttribute):
+		return __obj(context, **kwargs)
+	
+	elif isinstance(__obj, (list, tuple)):
+		return (jinja_resolve_contextattributes(context, item, **kwargs) for item in __obj)
+	
+	elif isinstance(__obj, (set, frozenset)):
+		return { jinja_resolve_contextattributes(context, item, **kwargs) for item in __obj }
+	
+	elif isinstance(__obj, (dict, OrderedDict)):
+		return { k : jinja_resolve_contextattributes(context, item, **kwargs) for k, item in __obj.items() }
+	
+	return __obj
+
 class DisplayManagerAppConfig(AppConfig):
 	def ready(self):
-		pass
+		get_jinja_env().globals.update({
+			'context_getattr' : jinja_context_getattr,
+			'batch_context_getattr' : jinja_batch_context_getattr,
+			'resolve_contextattributes' : jinja_resolve_contextattributes,
+		})

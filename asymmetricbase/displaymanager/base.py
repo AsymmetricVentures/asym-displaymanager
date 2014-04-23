@@ -22,13 +22,14 @@ from collections import OrderedDict
 
 from django.core.exceptions import FieldError
 
+import six
+
 from jinja2.runtime import Macro
 from jinja2.utils import contextfunction
 
-from asymmetricbase.jinja import jinja_env
+from asymmetricbase.jinja import get_jinja_env
 from asymmetricbase.utils.orderedset import OrderedSet
 from asymmetricbase.middleware.request_cache import get_request_cache
-import six
 
 DEFAULT_NAMES = ('ordering', 'structural_name',)
 
@@ -252,6 +253,8 @@ class Display(six.with_metaclass(DisplayMeta)):
 	@staticmethod
 	def _load_templates(template_dict, template_name, context):
 		if template_name is not None:
+			jinja_env = get_jinja_env()
+			
 			if isinstance(template_name, (list, tuple, OrderedSet)):
 				for name in template_name:
 					if name not in template_dict:
